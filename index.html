@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Topline</title>
+    <title>Personal News Aggregator</title>
     <style>
         body { font-family: system-ui, sans-serif; margin: 20px; background: #f8f9fa; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -25,14 +25,14 @@
     <div id="politics-stories" class="story-list" style="display: none;"></div>
 
     <script>
-        const API_PROXY = "https://your-backend-server.com/news"; // Replace with your actual backend proxy URL
+        const API_PROXY = "http://localhost:3000/news"; // Update with actual backend proxy URL
 
         let storedPrefs = localStorage.getItem('prefs');
         let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Tech', 'Politics'] };
 
         async function loadNews(category, containerId) {
             try {
-                const response = await fetch(`${API_PROXY}?category=${category}`);
+                const response = await fetch(`${API_PROXY}?category=${category.toLowerCase()}`);
                 const data = await response.json();
                 renderStories(containerId, data.articles);
             } catch (error) {
@@ -42,6 +42,11 @@
 
         function renderStories(containerId, articles) {
             const container = document.getElementById(containerId);
+            if (articles.length === 0) {
+                container.innerHTML = '<p>No stories available. Try adjusting your preferences.</p>';
+                return;
+            }
+
             container.innerHTML = articles
                 .filter(article => article.source && article.source.name && !preferences.blockedSources.includes(article.source.name))
                 .map(article => `
@@ -65,8 +70,9 @@
                 preferences.blockedSources.filter(s => s !== source) :
                 [...preferences.blockedSources, source];
             localStorage.setItem('prefs', JSON.stringify(preferences));
-            loadNews('technology', 'tech-stories');
-            loadNews('politics', 'politics-stories');
+            
+            const activeTab = document.querySelector('.tab.active').innerText.toLowerCase();
+            loadNews(activeTab, `${activeTab}-stories`);
         }
 
         loadNews('technology', 'tech-stories');
