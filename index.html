@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personal News Aggregator</title>
     <style>
-        /* Minimal CSS */
         body { font-family: system-ui, sans-serif; margin: 20px; background: #f8f9fa; }
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .tab { cursor: pointer; padding: 8px 12px; background: #e9ecef; border-radius: 4px; }
@@ -14,8 +13,7 @@
         .story { margin-bottom: 12px; padding: 12px; background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .story a { color: #1a1a1a; text-decoration: none; }
         .story a:hover { text-decoration: underline; }
-        .source { font-size: 0.8em; color: #666; margin-left: 8px; }
-        .blocked { opacity: 0.5; }
+        .source { font-size: 0.8em; color: #666; margin-left: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -27,47 +25,33 @@
     <div id="politics-stories" class="story-list" style="display: none;"></div>
 
     <script>
-        // Replace with your NewsAPI key: https://newsapi.org/register
-        const NEWSAPI_KEY = ac3e76cc2b974cc38df04daee32ff7bb;
+        const API_PROXY = "https://your-backend-server.com/news"; // Replace with your actual backend proxy URL
 
-        // User preferences (stored in localStorage)
-        let preferences = JSON.parse(localStorage.getItem('prefs')) || {
-            blockedSources: [],
-            topics: ['Tech', 'Politics']
-        };
+        let storedPrefs = localStorage.getItem('prefs');
+        let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Tech', 'Politics'] };
 
-        // Fetch and render Tech news
-        async function loadTechNews() {
-            const response = await fetch(
-                `https://newsapi.org/v2/top-headlines?category=technology&apiKey=${NEWSAPI_KEY}`
-            );
-            const data = await response.json();
-            renderStories('tech-stories', data.articles);
+        async function loadNews(category, containerId) {
+            try {
+                const response = await fetch(`${API_PROXY}?category=${category}`);
+                const data = await response.json();
+                renderStories(containerId, data.articles);
+            } catch (error) {
+                console.error("Error fetching news:", error);
+            }
         }
 
-        // Fetch and render Politics news
-        async function loadPoliticsNews() {
-            const response = await fetch(
-                `https://newsapi.org/v2/top-headlines?category=general&country=us&apiKey=${NEWSAPI_KEY}`
-            );
-            const data = await response.json();
-            renderStories('politics-stories', data.articles);
-        }
-
-        // Render stories to DOM
         function renderStories(containerId, articles) {
             const container = document.getElementById(containerId);
             container.innerHTML = articles
-                .filter(article => !preferences.blockedSources.includes(article.source.name))
+                .filter(article => article.source && article.source.name && !preferences.blockedSources.includes(article.source.name))
                 .map(article => `
-                    <div class="story ${preferences.blockedSources.includes(article.source.name) ? 'blocked' : ''}">
+                    <div class="story">
                         <a href="${article.url}" target="_blank">${article.title}</a>
-                        <span class="source">${article.source.name}</span>
+                        <span class="source" onclick="toggleBlockSource('${article.source.name}')">${article.source.name}</span>
                     </div>
                 `).join('');
         }
 
-        // Tab navigation
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.story-list').forEach(div => div.style.display = 'none');
@@ -75,22 +59,18 @@
             document.getElementById(`${tabName}-stories`).style.display = 'block';
         }
 
-        // Block/unblock a source
-        document.body.addEventListener('click', (e) => {
-            if (e.target.classList.contains('source')) {
-                const source = e.target.textContent;
-                preferences.blockedSources = preferences.blockedSources.includes(source) ?
-                    preferences.blockedSources.filter(s => s !== source) :
-                    [...preferences.blockedSources, source];
-                localStorage.setItem('prefs', JSON.stringify(preferences));
-                loadTechNews();
-                loadPoliticsNews();
-            }
-        });
+        function toggleBlockSource(source) {
+            source = source.trim();
+            preferences.blockedSources = preferences.blockedSources.includes(source) ?
+                preferences.blockedSources.filter(s => s !== source) :
+                [...preferences.blockedSources, source];
+            localStorage.setItem('prefs', JSON.stringify(preferences));
+            loadNews('technology', 'tech-stories');
+            loadNews('politics', 'politics-stories');
+        }
 
-        // Initial load
-        loadTechNews();
-        loadPoliticsNews();
+        loadNews('technology', 'tech-stories');
+        loadNews('politics', 'politics-stories');
     </script>
 </body>
 </html>
