@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
 
     <style>
-
         body {
             font-family: 'Open Sans', sans-serif;
             margin: 20px;
@@ -16,7 +15,6 @@
             background-color: #f9f9f9;
         }
 
-        /* Tab styles */
         .tabs {
             display: flex;
             gap: 15px;
@@ -36,7 +34,6 @@
             color: white;
         }
 
-        /* Story list */
         .story-list {
             display: none;
         }
@@ -49,7 +46,6 @@
             box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        /* Link styling - */
         .story a {
             text-decoration: none;
             color: black;
@@ -63,20 +59,17 @@
     </style>
 </head>
 <body>
-
-    <!-- Navigation Tabs -->
     <div class="tabs">
-        <div class="tab active" onclick="showTab('technology')">Tech</div>
-        <div class="tab" onclick="showTab('trending')">Trending</div>
+        <div class="tab active" onclick="showTab('tech')">Tech</div>
+        <div class="tab" onclick="showTab('general')">General</div>
         <div class="tab" onclick="showTab('politics')">Politics</div>
         <div class="tab" onclick="showTab('health')">Health</div>
         <div class="tab" onclick="showTab('entertainment')">Entertainment</div>
         <div class="tab" onclick="showTab('sports')">Sports</div>
     </div>
 
-    <!-- News Sections -->
-    <div id="technology-stories" class="story-list"></div>
-    <div id="trending-stories" class="story-list" style="display: none;"></div>
+    <div id="tech-stories" class="story-list"></div>
+    <div id="general-stories" class="story-list" style="display: none;"></div>
     <div id="politics-stories" class="story-list" style="display: none;"></div>
     <div id="health-stories" class="story-list" style="display: none;"></div>
     <div id="entertainment-stories" class="story-list" style="display: none;"></div>
@@ -86,30 +79,46 @@
         const API_PROXY = "http://localhost:3000/news";
 
         let storedPrefs = localStorage.getItem('prefs');
-        let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Technology', 'Trending', 'Politics', 'Health', 'Entertainment', 'Sports'] };
+        let preferences = storedPrefs ? JSON.parse(storedPrefs) : { 
+            blockedSources: [], 
+            topics: ['tech', 'general', 'politics', 'health', 'entertainment', 'sports'] 
+        };
 
-        window.onload = () => showTab('technology');  // Default to Tech tab
+        window.onload = () => showTab('tech');
 
         async function loadNews(category, containerId) {
             try {
-                const response = await fetch(`${API_PROXY}?category=${category.toLowerCase()}`);
-                const data = await response.json();
+                const container = document.getElementById(containerId);
+                container.innerHTML = '<div class="story">Loading news...</div>';
+                
+                const response = await fetch(`${API_PROXY}?category=${category.toLowerCase()}`, {
+                    headers: {
+                        'ngrok-skip-browser-warning': 'true'  // Critical for ngrok
+                    }
+                });
 
-                if (data.articles) {
-                    renderStories(containerId, data.articles);
-                } else {
-                    document.getElementById(containerId).innerHTML = '<p>No news available.</p>';
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to load news');
                 }
+
+                const data = await response.json();
+                renderStories(containerId, data.articles);
             } catch (error) {
-                console.error("Error fetching news:", error);
-                document.getElementById(containerId).innerHTML = '<p>Error fetching news. Please try again later.</p>';
+                console.error("Error:", error);
+                document.getElementById(containerId).innerHTML = `
+                    <div class="story" style="color: red">
+                        ${error.message}<br>
+                        ${error.message.includes('Failed') ? 'Check ngrok connection' : ''}
+                    </div>
+                `;
             }
         }
 
         function renderStories(containerId, articles) {
-            let container = document.getElementById(containerId);
+            const container = document.getElementById(containerId);
             container.innerHTML = articles
-                .filter(article => article.source && article.source.name && !preferences.blockedSources.includes(article.source.name))
+                .filter(article => article.source?.name && !preferences.blockedSources.includes(article.source.name))
                 .map(article => `
                     <div class="story">
                         <a href="${article.url}" target="_blank">${article.title}</a>
@@ -124,12 +133,31 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.story-list').forEach(div => div.style.display = 'none');
 
-            document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
-            document.getElementById(`${tabName}-stories`).style.display = 'block';
+            const activeTab = document.querySelector(`.tab[onclick="showTab('${tabName}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+                const targetContainer = document.getElementById(`${tabName}-stories`);
+                if (targetContainer) {
+                    targetContainer.style.display = 'block';
+                    loadNews(tabName, `${tabName}-stories`);
+                }
+            }
+        }
 
-            loadNews(tabName, `${tabName}-stories`);
+        function toggleBlockSource(source) {
+            preferences.blockedSources = preferences.blockedSources.includes(source)
+                ? preferences.blockedSources.filter(s => s !== source)
+                : [...preferences.blockedSources, source];
+            localStorage.setItem('prefs', JSON.stringify(preferences));
+            
+            // Reload all visible stories
+            document.querySelectorAll('.story-list').forEach(container => {
+                if (container.style.display !== 'none') {
+                    const category = container.id.replace('-stories', '');
+                    loadNews(category, container.id);
+                }
+            });
         }
     </script>
-
 </body>
 </html>
