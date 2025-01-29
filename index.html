@@ -19,19 +19,21 @@
     </style>
 </head>
 <body>
-    <div class="tabs">
-        <div class="tab active" onclick="showTab('technology')">Tech</div>
-        <div class="tab" onclick="showTab('trending')">Trending</div>
-        <div class="tab" onclick="showTab('politics')">Politics</div>
-        <div class="tab" onclick="showTab('health')">Health</div>
-        <div class="tab" onclick="showTab('entertainment')">Entertainment</div>
-    </div>
+ <div class="tabs">
+    <div class="tab active" onclick="showTab('technology')">Tech</div>
+    <div class="tab" onclick="showTab('trending')">Trending</div>
+    <div class="tab" onclick="showTab('politics')">Politics</div>
+    <div class="tab" onclick="showTab('health')">Health</div>
+    <div class="tab" onclick="showTab('entertainment')">Entertainment</div>
+    <div class="tab" onclick="showTab('sports')">Sports</div> <!-- Added Sports tab -->
+</div>
 
-    <div id="technology-stories" class="story-list"></div>
-    <div id="trending-stories" class="story-list" style="display: none;"></div>
-    <div id="politics-stories" class="story-list" style="display: none;"></div>
-    <div id="health-stories" class="story-list" style="display: none;"></div>
-    <div id="entertainment-stories" class="story-list" style="display: none;"></div>
+<div id="technology-stories" class="story-list"></div>
+<div id="trending-stories" class="story-list" style="display: none;"></div>
+<div id="politics-stories" class="story-list" style="display: none;"></div>
+<div id="health-stories" class="story-list" style="display: none;"></div>
+<div id="entertainment-stories" class="story-list" style="display: none;"></div>
+<div id="sports-stories" class="story-list" style="display: none;"></div> <!-- Added Sports div -->
 
     <script>
         const API_PROXY = "http://localhost:3000/news";
