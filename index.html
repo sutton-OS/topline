@@ -1,46 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal News Aggregator</title>
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 20px; background: #f8f9fa; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab { cursor: pointer; padding: 8px 12px; background: #e9ecef; border-radius: 4px; }
-        .tab.active { background: #4dabf7; color: white; }
-        .story-list { max-width: 800px; margin: 0 auto; }
-        .story { margin-bottom: 12px; padding: 12px; background: white; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .story a { color: #1a1a1a; text-decoration: none; }
-        .story a:hover { text-decoration: underline; }
-        .source { font-size: 0.8em; color: #666; margin-left: 8px; cursor: pointer; }
-    </style>
+    <!-- ... (keep existing meta tags and styles) ... -->
 </head>
 <body>
     <div class="tabs">
-        <div class="tab active" onclick="showTab('tech')">Tech</div>
-        <div class="tab" onclick="showTab('politics')">Politics</div>
+        <!-- Update tab categories to match valid NewsAPI categories -->
+        <div class="tab active" onclick="showTab('technology')">Tech</div>
+        <div class="tab" onclick="showTab('general')">General</div>
     </div>
-    <div id="tech-stories" class="story-list"></div>
-    <div id="politics-stories" class="story-list" style="display: none;"></div>
+    <div id="technology-stories" class="story-list"></div>
+    <div id="general-stories" class="story-list" style="display: none;"></div>
 
     <script>
         const API_PROXY = "http://localhost:3000/news";
 
         let storedPrefs = localStorage.getItem('prefs');
-        let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Tech', 'Politics'] };
+        let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Technology', 'General'] };
 
-        window.onload = () => showTab('tech');  // Default tab
+        window.onload = () => showTab('technology');  // Default to valid category
 
         async function loadNews(category, containerId) {
             try {
-                console.log('Loading news for category:', category);  // Debugging line
                 const response = await fetch(`${API_PROXY}?category=${category.toLowerCase()}`);
-                if (!response.ok) {
-                    throw new Error('Failed to load news');
-                }
-                const data = await response.json();
-                renderStories(containerId, data.articles);
+                // ... (rest remains the same) ...
             } catch (error) {
                 console.error("Error fetching news:", error);
                 document.getElementById(containerId).innerHTML = '<p>Error fetching news. Please try again later.</p>';
@@ -48,47 +31,29 @@
         }
 
         function renderStories(containerId, articles) {
-            console.log('Rendering articles:', articles);  // Debugging line
-            const container = document.getElementById(containerId);
-            if (articles.length === 0) {
-                container.innerHTML = '<p>No stories available. Try adjusting your preferences.</p>';
-                return;
-            }
-
+            // Escape single quotes in source names to prevent JS errors
             container.innerHTML = articles
                 .filter(article => article.source && article.source.name && !preferences.blockedSources.includes(article.source.name))
                 .map(article => `
                     <div class="story">
                         <a href="${article.url}" target="_blank">${article.title}</a>
-                        <span class="source" onclick="toggleBlockSource('${article.source.name}')">${article.source.name}</span>
+                        <span class="source" onclick="toggleBlockSource('${article.source.name.replace(/'/g, "\\'")}')">
+                            ${article.source.name}
+                        </span>
                     </div>
                 `).join('');
         }
 
+        // Update tab IDs and function calls to match valid categories
         function showTab(tabName) {
-            console.log('Switching to tab:', tabName);  // Debugging line
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.story-list').forEach(div => div.style.display = 'none');
             document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
             document.getElementById(`${tabName}-stories`).style.display = 'block';
-            
-            // Load news for the selected category
             loadNews(tabName, `${tabName}-stories`);
         }
 
-        function toggleBlockSource(source) {
-            source = source.trim();
-            preferences.blockedSources = preferences.blockedSources.includes(source) ?
-                preferences.blockedSources.filter(s => s !== source) :
-                [...preferences.blockedSources, source];
-            localStorage.setItem('prefs', JSON.stringify(preferences));
-            loadNews('tech', 'tech-stories');
-            loadNews('politics', 'politics-stories');
-        }
-
-        // Initially load news for both categories
-        loadNews('tech', 'tech-stories');
-        loadNews('politics', 'politics-stories');
+        // ... (rest of the script remains the same) ...
     </script>
 </body>
 </html>
