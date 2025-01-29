@@ -6,81 +6,7 @@
     <title>Topline News</title>
     
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
-
-    <style>
-
-        body {
-            font-family: 'Open Sans', sans-serif;
-            margin: 20px;
-            padding: 0;
-            background-color: #f9f9f9;
-        }
-
-        /* Tab styles */
-        .tabs {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        .tab {
-            padding: 10px 15px;
-            background-color: #ddd;
-            border-radius: 5px;
-            font-weight: 600;
-        }
-
-        .tab.active {
-            background-color: #333;
-            color: white;
-        }
-
-        /* Story list */
-        .story-list {
-            display: none;
-        }
-
-        .story {
-            margin-bottom: 15px;
-            padding: 10px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Link styling - */
-        .story a {
-            text-decoration: none;
-            color: black;
-            font-weight: bold;
-            display: block;
-        }
-
-        .story a:hover {
-            color: darkgray;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Navigation Tabs -->
-    <div class="tabs">
-        <div class="tab active" onclick="showTab('technology')">Tech</div>
-        <div class="tab" onclick="showTab('trending')">Trending</div>
-        <div class="tab" onclick="showTab('politics')">Politics</div>
-        <div class="tab" onclick="showTab('health')">Health</div>
-        <div class="tab" onclick="showTab('entertainment')">Entertainment</div>
-        <div class="tab" onclick="showTab('sports')">Sports</div>
-    </div>
-
-    <!-- News Sections -->
-    <div id="technology-stories" class="story-list"></div>
-    <div id="trending-stories" class="story-list" style="display: none;"></div>
-    <div id="politics-stories" class="story-list" style="display: none;"></div>
-    <div id="health-stories" class="story-list" style="display: none;"></div>
-    <div id="entertainment-stories" class="story-list" style="display: none;"></div>
-    <div id="sports-stories" class="story-list" style="display: none;"></div>
+    <link rel="stylesheet" href="styles.css">
 
     <script>
         const API_PROXY = "http://localhost:3000/news";
@@ -88,7 +14,37 @@
         let storedPrefs = localStorage.getItem('prefs');
         let preferences = storedPrefs ? JSON.parse(storedPrefs) : { blockedSources: [], topics: ['Technology', 'Trending', 'Politics', 'Health', 'Entertainment', 'Sports'] };
 
-        window.onload = () => showTab('technology');  // Default to Tech tab
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelector('.tabs');
+            const storyLists = document.querySelectorAll('.story-list');
+
+            tabs.addEventListener('click', event => {
+                const tab = event.target.closest('.tab');
+                if (tab) {
+                    const category = tab.getAttribute('data-tab');
+                    showTab(category);
+                }
+            });
+
+            function showTab(category) {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                storyLists.forEach(div => div.style.display = 'none');
+
+                const activeTab = document.querySelector(`.tab[data-tab="${category}"]`);
+                if (activeTab) {
+                    activeTab.classList.add('active');
+                }
+
+                const activeList = document.querySelector(`.story-list[data-category="${category}"]`);
+                if (activeList) {
+                    activeList.style.display = 'block';
+                    loadNews(category, activeList.id);
+                }
+            }
+
+            // Load initial tab
+            showTab('technology');
+        });
 
         async function loadNews(category, containerId) {
             try {
@@ -120,16 +76,42 @@
                 `).join('');
         }
 
-        function showTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.story-list').forEach(div => div.style.display = 'none');
-
-            document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
-            document.getElementById(`${tabName}-stories`).style.display = 'block';
-
-            loadNews(tabName, `${tabName}-stories`);
+        function toggleBlockSource(sourceName) {
+            const index = preferences.blockedSources.indexOf(sourceName);
+            if (index > -1) {
+                preferences.blockedSources.splice(index, 1); // Remove source
+            } else {
+                preferences.blockedSources.push(sourceName); // Add source
+            }
+            localStorage.setItem('prefs', JSON.stringify(preferences));
+            // Re-render news for current tab
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                const category = activeTab.getAttribute('data-tab');
+                loadNews(category, `${category}-stories`);
+            }
         }
     </script>
+</head>
+<body>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="technology">Tech</div>
+        <div class="tab" data-tab="trending">Trending</div>
+        <div class="tab" data-tab="politics">Politics</div>
+        <div class="tab" data-tab="health">Health</div>
+        <div class="tab" data-tab="entertainment">Entertainment</div>
+        <div class="tab" data-tab="sports">Sports</div>
+    </div>
+
+    <!-- News Sections -->
+    <div class="story-list" id="technology-stories" data-category="technology"></div>
+    <div class="story-list" id="trending-stories" data-category="trending" style="display: none;"></div>
+    <div class="story-list" id="politics-stories" data-category="politics" style="display: none;"></div>
+    <div class="story-list" id="health-stories" data-category="health" style="display: none;"></div>
+    <div class="story-list" id="entertainment-stories" data-category="entertainment" style="display: none;"></div>
+    <div class="story-list" id="sports-stories" data-category="sports" style="display: none;"></div>
 
 </body>
 </html>
